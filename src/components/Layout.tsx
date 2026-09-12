@@ -21,9 +21,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 className="h-8 w-8 rounded-lg object-cover ring-1 ring-slate-200"
               />
             ) : (
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 font-black text-white">
-                C
-              </span>
+              <img
+                src="/logo.png"
+                alt="CotizaYa"
+                className="h-8 w-8 rounded-lg bg-white object-contain ring-1 ring-slate-200"
+              />
             )}
             <span className="hidden text-lg font-extrabold tracking-tight min-[420px]:block">
               Cotiza<span className="text-emerald-600">Ya</span>

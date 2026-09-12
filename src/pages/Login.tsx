@@ -49,9 +49,11 @@ export default function Login() {
   return (
     <div className="mx-auto mt-8 max-w-sm">
       <div className="text-center">
-        <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-2xl font-black text-white">
-          C
-        </span>
+        <img
+          src="/logo.png"
+          alt="CotizaYa"
+          className="mx-auto h-16 w-16 rounded-2xl bg-white object-contain p-1 ring-1 ring-slate-200"
+        />
         <h1 className="mt-3 text-2xl font-extrabold tracking-tight">
           Cotiza<span className="text-emerald-600">Ya</span>
         </h1>
