@@ -16,10 +16,30 @@ import {
 import { IVA_LABELS } from "../lib/types";
 import { sendViaWhatsApp } from "../lib/whatsapp";
 
+/** Mezcla un hex con blanco. amt = proporción del color (0..1). */
+function mixWithWhite(hex: string, amt: number): string {
+  const h = hex.replace("#", "");
+  const full =
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h.padEnd(6, "0").slice(0, 6);
+  const n = parseInt(full, 16);
+  if (!Number.isFinite(n)) return "#ffffff";
+  const r = Math.round(((n >> 16) & 255) * amt + 255 * (1 - amt));
+  const g = Math.round(((n >> 8) & 255) * amt + 255 * (1 - amt));
+  const b = Math.round((n & 255) * amt + 255 * (1 - amt));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
+}
+
 export default function Preview() {
   const company = getCompany();
   const brand = company.color || "#059669";
-  const tint = `color-mix(in srgb, ${brand} 9%, white)`;
+  // Tinte calculado en JS (hex) en vez de color-mix(): algunos motores de
+  // celular no soportan color-mix/oklch y la captura del PDF sale con bandas.
+  const tint = mixWithWhite(brand, 0.09);
   const last = getLastQuote();
   const draft = last ? null : getDraft();
   const quote = last ?? (draft ? draftToQuote(draft) : null);
@@ -112,10 +132,13 @@ export default function Preview() {
         </div>
       )}
 
-      {/* Hoja (se captura tal cual para el PDF) */}
+      {/* Hoja (se captura tal cual para el PDF).
+          Los colores van en style hex (no clases oklch): motores viejos
+          de celular las ignoran y la captura sale con artefactos. */}
       <div
         ref={sheetRef}
-        className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+        className="mt-4 overflow-hidden rounded-2xl border bg-white shadow-sm"
+        style={{ backgroundColor: "#ffffff", borderColor: "#e2e8f0" }}
       >
         <div className="p-4 text-white" style={{ backgroundColor: brand }}>
           <div className="flex items-start gap-3">
@@ -126,7 +149,10 @@ export default function Preview() {
                 className="h-12 w-12 shrink-0 rounded-xl bg-white object-cover"
               />
             ) : (
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20 text-xl font-black">
+              <div
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl font-black"
+                style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+              >
                 {(company.nombre || "C")[0]}
               </div>
             )}
@@ -156,7 +182,9 @@ export default function Preview() {
         <div className="p-4">
           <div>
             <div className="text-xl font-extrabold">Presupuesto</div>
-            <div className="text-sm text-slate-500">Fecha: {fecha}</div>
+            <div className="text-sm" style={{ color: "#64748b" }}>
+              Fecha: {fecha}
+            </div>
           </div>
 
           <div className="mt-3 rounded-xl p-3" style={{ backgroundColor: tint }}>
@@ -170,16 +198,23 @@ export default function Preview() {
               <dl className="mt-1.5 space-y-1 text-sm">
                 {clientRows.map((r) => (
                   <div key={r.k} className="flex gap-2">
-                    <dt className="w-20 shrink-0 text-slate-500">{r.k}</dt>
+                    <dt className="w-20 shrink-0" style={{ color: "#64748b" }}>
+                      {r.k}
+                    </dt>
                     <dd className="min-w-0 flex-1 break-words font-medium">{r.v}</dd>
                   </div>
                 ))}
               </dl>
             ) : (
-              <p className="mt-1 text-sm text-slate-500">—</p>
+              <p className="mt-1 text-sm" style={{ color: "#64748b" }}>
+                —
+              </p>
             )}
             {quote.notas && (
-              <div className="mt-2 border-t border-black/5 pt-2 text-sm text-slate-600">
+              <div
+                className="mt-2 border-t pt-2 text-sm"
+                style={{ borderColor: "rgba(0,0,0,0.05)", color: "#475569" }}
+              >
                 <span className="font-semibold">Notas: </span>
                 {quote.notas}
               </div>
@@ -200,11 +235,16 @@ export default function Preview() {
               </thead>
               <tbody>
                 {quote.items.map((it, i) => (
-                  <tr key={it.id} className={i % 2 ? "bg-slate-50" : ""}>
-                    <td className="px-2 py-2 text-slate-500">{i + 1}</td>
+                  <tr
+                    key={it.id}
+                    style={i % 2 ? { backgroundColor: "#f8fafc" } : undefined}
+                  >
+                    <td className="px-2 py-2" style={{ color: "#64748b" }}>
+                      {i + 1}
+                    </td>
                     <td className="px-2 py-2">
                       <div className="font-medium">{it.descripcion || "-"}</div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs" style={{ color: "#64748b" }}>
                         {Number(it.cantidad) > 0
                           ? `${it.cantidad} × ${formatGs(it.precio)}`
                           : `Servicio • ${formatGs(it.precio)}`}
@@ -220,18 +260,21 @@ export default function Preview() {
             </table>
           </div>
 
-          <dl className="mt-3 space-y-1 border-t border-dashed border-slate-200 pt-3 text-sm">
-            <div className="flex justify-between text-slate-600">
+          <dl
+            className="mt-3 space-y-1 border-t border-dashed pt-3 text-sm"
+            style={{ borderColor: "#e2e8f0" }}
+          >
+            <div className="flex justify-between" style={{ color: "#475569" }}>
               <dt>Subtotal</dt>
               <dd className="font-semibold">{formatGs(calc.subtotal)}</dd>
             </div>
             {calc.descuentoMonto > 0 && (
-              <div className="flex justify-between text-slate-600">
+              <div className="flex justify-between" style={{ color: "#475569" }}>
                 <dt>Descuento</dt>
                 <dd>- {formatGs(calc.descuentoMonto)}</dd>
               </div>
             )}
-            <div className="flex justify-between text-slate-600">
+            <div className="flex justify-between" style={{ color: "#475569" }}>
               <dt>{IVA_LABELS[quote.ivaMode]}</dt>
               <dd>{formatGs(calc.ivaMonto)}</dd>
             </div>
@@ -245,9 +288,11 @@ export default function Preview() {
           </dl>
 
           {company.condiciones && (
-            <p className="mt-3 text-xs text-slate-500">{company.condiciones}</p>
+            <p className="mt-3 text-xs" style={{ color: "#64748b" }}>
+              {company.condiciones}
+            </p>
           )}
-          <p className="mt-1 text-center text-[11px] text-slate-400">
+          <p className="mt-1 text-center text-[11px]" style={{ color: "#94a3b8" }}>
             Generado con CotizaYa • {fecha}
           </p>
         </div>

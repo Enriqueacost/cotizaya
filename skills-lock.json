@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "mobile-design": {
+      "source": "sickn33/agentic-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mobile-design/SKILL.md",
+      "computedHash": "0fecb7721a1cc4c869fcfce919be7edee62cdf1eb89cd3de0885cfabd7092534"
+    }
+  }
+}
