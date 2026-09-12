@@ -6,8 +6,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const company = getCompany();
   const { cloudEnabled, user } = useAuth();
   const showNav = !cloudEnabled || !!user;
+  // Targets táctiles ≥44px (guía touch-psychology): el header mide 56px
   const navLink = ({ isActive }: { isActive: boolean }) =>
-    `rounded-full px-2 py-1.5 text-[13px] font-medium sm:px-3 sm:text-sm ${isActive ? "bg-emerald-600 text-white" : "text-slate-600 hover:bg-slate-100"}`;
+    `inline-flex min-h-[44px] items-center rounded-full px-2 py-1 text-[13px] font-medium sm:px-3 sm:text-sm ${isActive ? "bg-emerald-600 text-white" : "text-slate-600 hover:bg-slate-100 active:bg-slate-200"}`;
   return (
     <div className="min-h-dvh">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
@@ -41,8 +42,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </NavLink>
               <NavLink
                 to="/config"
+                aria-label="Configuración"
                 className={({ isActive }) =>
-                  `rounded-full px-2 py-1.5 text-[13px] font-medium sm:px-3 sm:text-sm ${isActive ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`
+                  `inline-flex min-h-[44px] items-center rounded-full px-2 py-1 text-[13px] font-medium sm:px-3 sm:text-sm ${isActive ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100 active:bg-slate-200"}`
                 }
               >
                 ⚙️

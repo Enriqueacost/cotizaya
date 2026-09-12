@@ -12,6 +12,11 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Feedback táctil instantáneo: elimina el retardo de doble-tap-zoom */
+button, a, input, select, textarea {
+  touch-action: manipulation;
+}
+
 body {
   @apply bg-slate-100 text-slate-900 antialiased;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;

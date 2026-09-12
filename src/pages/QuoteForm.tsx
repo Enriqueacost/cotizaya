@@ -25,6 +25,7 @@ import {
   setTemplates as setTemplatesLocal,
 } from "../lib/storage";
 import { IVA_LABELS, type IvaMode, type ItemTemplate, type QuoteItem } from "../lib/types";
+import { tap } from "../lib/tap";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const todayInput = () => new Date().toISOString().slice(0, 10);
@@ -39,11 +40,17 @@ export default function QuoteForm() {
   const [clienteNombre, setClienteNombre] = useState(initial?.clienteNombre || "");
   const [clienteRuc, setClienteRuc] = useState(initial?.clienteRuc || "");
   const [clienteTelefono, setClienteTelefono] = useState(initial?.clienteTelefono || "");
-  const [items, setItems] = useState<QuoteItem[]>(
-    initial?.items?.length
-      ? initial.items
-      : [{ id: uid(), descripcion: "", cantidad: 0, precio: 0 }],
-  );
+  const [items, setItems] = useState<QuoteItem[]>(() => {
+    // Solo ítems con contenido: los borradores viejos podían traer una fila vacía
+    const valid = (initial?.items ?? []).filter(
+      (it) => it.descripcion.trim() || Number(it.precio) > 0,
+    );
+    return valid.length ? valid : [];
+  });
+  // Formulario de alta (va PRIMERO en la pantalla, no persiste hasta agregar)
+  const [entryDesc, setEntryDesc] = useState("");
+  const [entryCant, setEntryCant] = useState("");
+  const [entryPrecio, setEntryPrecio] = useState("");
   const [descuentoTipo, setDescuentoTipo] = useState<"pct" | "monto">(
     initial?.descuentoTipo || "pct",
   );
@@ -90,7 +97,7 @@ export default function QuoteForm() {
     setItems((list) => list.map((it) => (it.id === id ? { ...it, ...patch } : it)));
 
   const removeItem = (id: string) =>
-    setItems((list) => (list.length > 1 ? list.filter((it) => it.id !== id) : list));
+    setItems((list) => list.filter((it) => it.id !== id));
 
   async function onContinue() {
     if (!items.some((i) => i.descripcion.trim() && Number(i.precio) > 0)) {
@@ -115,6 +122,7 @@ export default function QuoteForm() {
       notas,
     };
     saveLastQuote(quote);
+    tap();
     // Cada presupuesto generado queda en el historial con folio interno.
     // Con sesión: folio autoritativo del servidor; sin sesión/red: local.
     setSaving(true);
@@ -134,6 +142,26 @@ export default function QuoteForm() {
       setSaving(false);
     }
     nav("/preview");
+  }
+
+  function addEntry() {
+    if (!entryDesc.trim() || !(Number(entryPrecio) > 0)) {
+      alert("Escribí la descripción y un precio mayor a 0");
+      return;
+    }
+    setItems((l) => [
+      ...l,
+      {
+        id: uid(),
+        descripcion: entryDesc.trim(),
+        cantidad: Number(entryCant) || 0,
+        precio: Number(entryPrecio),
+      },
+    ]);
+    setEntryDesc("");
+    setEntryCant("");
+    setEntryPrecio("");
+    tap();
   }
 
   async function saveAsTemplate(it: QuoteItem) {
@@ -187,23 +215,26 @@ export default function QuoteForm() {
 
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold tracking-tight">Nuevo presupuesto</h1>
-        <button
-          onClick={() => {
-            if (!confirm("¿Limpiar todo el presupuesto?")) return;
-            setFechaInput(todayInput());
-            setClienteNombre("");
-            setClienteRuc("");
-            setClienteTelefono("");
-            setItems([{ id: uid(), descripcion: "", cantidad: 0, precio: 0 }]);
-            setDescuentoTipo("pct");
-            setDescuentoValor(0);
-            setIvaMode(company.ivaDefault || "incl10");
-            setNotas("");
-          }}
-          className="text-xs font-medium text-slate-400 underline"
-        >
-          Limpiar
-        </button>
+          <button
+            onClick={() => {
+              if (!confirm("¿Limpiar todo el presupuesto?")) return;
+              setFechaInput(todayInput());
+              setClienteNombre("");
+              setClienteRuc("");
+              setClienteTelefono("");
+              setItems([]);
+              setEntryDesc("");
+              setEntryCant("");
+              setEntryPrecio("");
+              setDescuentoTipo("pct");
+              setDescuentoValor(0);
+              setIvaMode(company.ivaDefault || "incl10");
+              setNotas("");
+            }}
+            className="min-h-[44px] px-2 text-xs font-medium text-slate-500 underline"
+          >
+            Limpiar
+          </button>
       </div>
 
       <div className="mt-4 space-y-4">
@@ -256,13 +287,54 @@ export default function QuoteForm() {
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-bold">🧾 Servicios / Productos</h2>
+            {items.length > 0 && (
+              <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">
+                {items.length}
+              </span>
+            )}
+          </div>
+
+          {/* Alta primero: el formulario va arriba, la lista debajo.
+              Una sola acción primaria por pantalla (thumb-zone). */}
+          <div className={cardCls + " space-y-2 border-emerald-200"}>
+            <span className={labelCls + " mb-0"}>➕ Agregar ítem</span>
+            <input
+              className={inputCls}
+              placeholder="Descripción: Ej. Instalación de aire 12000 BTU"
+              value={entryDesc}
+              onChange={(e) => setEntryDesc(e.target.value)}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Cantidad (opcional)</label>
+                <input
+                  className={inputCls}
+                  type="number"
+                  min={0}
+                  inputMode="decimal"
+                  value={entryCant}
+                  placeholder="—"
+                  onChange={(e) => setEntryCant(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Precio Gs.</label>
+                <input
+                  className={inputCls}
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={entryPrecio}
+                  placeholder="0"
+                  onChange={(e) => setEntryPrecio(e.target.value)}
+                />
+              </div>
+            </div>
             <button
-              onClick={() =>
-                setItems((l) => [...l, { id: uid(), descripcion: "", cantidad: 0, precio: 0 }])
-              }
-              className="rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-bold text-emerald-700"
+              onClick={addEntry}
+              className="w-full rounded-2xl bg-emerald-600 py-3 text-base font-bold text-white shadow-lg shadow-emerald-600/25 active:scale-[0.99]"
             >
-              + Agregar
+              Agregar a la lista
             </button>
           </div>
           {templates.length > 0 && (
@@ -271,7 +343,7 @@ export default function QuoteForm() {
                 <span className={labelCls + " mb-0"}>⭐ Frecuentes (tocá para agregar)</span>
                 <button
                   onClick={() => setManagingTpl((v) => !v)}
-                  className="text-xs text-slate-400 underline"
+                  className="min-h-[44px] px-2 text-xs text-slate-500 underline"
                 >
                   {managingTpl ? "Listo" : "Editar"}
                 </button>
@@ -280,10 +352,10 @@ export default function QuoteForm() {
                 {templates.map((t) => (
                   <span
                     key={t.id}
-                    className="inline-flex items-center gap-1 rounded-full bg-slate-100 py-1.5 pl-3 pr-1.5 text-sm"
+                    className="inline-flex items-center gap-1 rounded-full bg-slate-100 py-0.5 pl-3 pr-0.5 text-sm"
                   >
                     <button
-                      onClick={() =>
+                      onClick={() => {
                         setItems((l) => [
                           ...l,
                           {
@@ -292,8 +364,9 @@ export default function QuoteForm() {
                             cantidad: t.cantidad,
                             precio: t.precio,
                           },
-                        ])
-                      }
+                        ]);
+                        tap();
+                      }}
                       className="max-w-44 truncate font-medium"
                     >
                       {t.descripcion}
@@ -301,8 +374,8 @@ export default function QuoteForm() {
                     {managingTpl && (
                       <button
                         onClick={() => removeTemplate(t.id)}
-                        aria-label="Eliminar frecuente"
-                        className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-300 text-xs text-white"
+                        aria-label={`Eliminar frecuente ${t.descripcion}`}
+                        className="flex h-11 w-11 items-center justify-center rounded-full text-lg leading-none text-slate-500 active:scale-95"
                       >
                         ×
                       </button>
@@ -312,69 +385,73 @@ export default function QuoteForm() {
               </div>
             </div>
           )}
-          {items.map((it, idx) => (
-            <div key={it.id} className={cardCls + " space-y-2"}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400">ÍTEM {idx + 1}</span>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => saveAsTemplate(it)}
-                    className="text-xs font-medium text-amber-500"
-                    title="Guardar en frecuentes"
-                  >
-                    ★ Guardar
-                  </button>
-                  <button
-                    onClick={() => removeItem(it.id)}
-                    className="text-xs font-medium text-red-500"
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              </div>
-              <input
-                className={inputCls}
-                placeholder="Descripción: Ej. Instalación de aire 12000 BTU"
-                value={it.descripcion}
-                onChange={(e) => updateItem(it.id, { descripcion: e.target.value })}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Cantidad (opcional)</label>
+          {items.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-3 text-center text-sm text-slate-500">
+              Todavía no agregaste ítems. Completalos arriba 👆
+            </p>
+          ) : (
+            items.map((it) => (
+              <div key={it.id} className={cardCls + " space-y-2"}>
+                <input
+                  className={inputCls + " font-medium"}
+                  aria-label="Descripción del ítem"
+                  placeholder="Descripción"
+                  value={it.descripcion}
+                  onChange={(e) => updateItem(it.id, { descripcion: e.target.value })}
+                />
+                <div className="grid grid-cols-2 gap-3">
                   <input
                     className={inputCls}
+                    aria-label="Cantidad (opcional)"
                     type="number"
                     min={0}
                     inputMode="decimal"
                     value={it.cantidad || ""}
-                    placeholder="—"
+                    placeholder="Cant. —"
                     onChange={(e) =>
                       updateItem(it.id, {
                         cantidad: e.target.value === "" ? 0 : Number(e.target.value),
                       })
                     }
                   />
-                </div>
-                <div>
-                  <label className={labelCls}>Precio Gs.</label>
                   <input
                     className={inputCls}
+                    aria-label="Precio en guaraníes"
                     type="number"
                     min={0}
                     inputMode="numeric"
                     value={it.precio || ""}
-                    placeholder="0"
+                    placeholder="Precio Gs."
                     onChange={(e) =>
                       updateItem(it.id, { precio: Number(e.target.value) })
                     }
                   />
                 </div>
+                <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-1">
+                  <div className="text-sm font-bold text-slate-600">
+                    = {formatGs(itemSubtotal(it))}
+                  </div>
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => saveAsTemplate(it)}
+                      title="Guardar en frecuentes"
+                      aria-label="Guardar en frecuentes"
+                      className="min-h-[44px] px-3 text-sm font-medium text-amber-500 active:scale-95"
+                    >
+                      ★ Guardar
+                    </button>
+                    <button
+                      onClick={() => removeItem(it.id)}
+                      aria-label="Eliminar ítem"
+                      className="min-h-[44px] px-3 text-sm font-medium text-red-500 active:scale-95"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="text-right text-sm font-bold text-slate-600">
-                = {formatGs(itemSubtotal(it))}
-              </div>
-            </div>
-          ))}
+            ))
+          )}
           <p className="text-xs text-slate-500">
             Si es un servicio sin cantidad, dejá la cantidad vacía: se cobra como 1.
           </p>

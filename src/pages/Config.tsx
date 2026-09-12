@@ -190,7 +190,7 @@ export default function Config() {
                   type="button"
                   onClick={() => set("color", c)}
                   aria-label={`Color ${c}`}
-                  className={`h-10 w-10 rounded-full transition ${form.color === c ? "ring-2 ring-slate-900 ring-offset-2" : "ring-1 ring-slate-200"}`}
+                  className={`h-11 w-11 rounded-full transition active:scale-95 ${form.color === c ? "ring-2 ring-slate-900 ring-offset-2" : "ring-1 ring-slate-200"}`}
                   style={{ backgroundColor: c }}
                 />
               ))}

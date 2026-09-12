@@ -119,7 +119,7 @@ export default function History() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium ${
+              className={`inline-flex min-h-[44px] shrink-0 items-center rounded-full px-3 text-sm font-medium ${
                 filter === f
                   ? "bg-slate-900 text-white"
                   : "bg-white text-slate-600 ring-1 ring-slate-200"
@@ -158,7 +158,7 @@ export default function History() {
                     <span className="rounded-md bg-slate-900 px-2 py-0.5 text-xs font-bold text-white">
                       Nº {e.folio}
                     </span>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-slate-500">
                       {new Date(e.fecha).toLocaleDateString("es-PY")}
                     </span>
                   </div>
@@ -173,7 +173,7 @@ export default function History() {
                   <button
                     key={s}
                     onClick={() => onStatus(e, s)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                    className={`inline-flex min-h-[44px] items-center rounded-full px-3 text-xs font-bold active:scale-95 ${
                       e.status === s
                         ? STATUS_STYLE[s] + " ring-2 ring-slate-900/20"
                         : "bg-slate-50 text-slate-400"
@@ -186,19 +186,20 @@ export default function History() {
               <div className="flex gap-2 border-t border-slate-100 pt-2">
                 <button
                   onClick={() => onView(e)}
-                  className="flex-1 rounded-xl bg-emerald-600 py-2 text-sm font-bold text-white"
+                  className="flex-1 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white active:scale-[0.98]"
                 >
                   Ver
                 </button>
                 <button
                   onClick={() => onDuplicate(e)}
-                  className="flex-1 rounded-xl bg-slate-100 py-2 text-sm font-bold text-slate-700"
+                  className="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-700 active:scale-[0.98]"
                 >
                   Duplicar
                 </button>
                 <button
                   onClick={() => onDelete(e)}
-                  className="rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-red-500"
+                  aria-label={`Eliminar presupuesto Nº ${e.folio}`}
+                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl bg-red-50 px-3 text-sm font-bold text-red-500 active:scale-95"
                 >
                   🗑
                 </button>

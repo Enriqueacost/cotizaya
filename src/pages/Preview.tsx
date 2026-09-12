@@ -15,6 +15,7 @@ import {
 } from "../lib/storage";
 import { IVA_LABELS } from "../lib/types";
 import { sendViaWhatsApp } from "../lib/whatsapp";
+import { tap } from "../lib/tap";
 
 /** Mezcla un hex con blanco. amt = proporción del color (0..1). */
 function mixWithWhite(hex: string, amt: number): string {
@@ -75,6 +76,7 @@ export default function Preview() {
     if (!quote || !sheetRef.current) return;
     try {
       setBusy("pdf");
+      tap();
       await downloadPreviewPdf(
         sheetRef.current,
         getPdfFilename(quote.fecha),
@@ -90,6 +92,7 @@ export default function Preview() {
     if (!quote || !sheetRef.current) return;
     try {
       setBusy("wa");
+      tap();
       const blob = await getPreviewPdfBlob(sheetRef.current);
       const file = new File([blob], getPdfFilename(quote.fecha), {
         type: "application/pdf",
@@ -292,7 +295,7 @@ export default function Preview() {
               {company.condiciones}
             </p>
           )}
-          <p className="mt-1 text-center text-[11px]" style={{ color: "#94a3b8" }}>
+          <p className="mt-1 text-center text-[11px]" style={{ color: "#64748b" }}>
             Generado con CotizaYa • {fecha}
           </p>
         </div>
